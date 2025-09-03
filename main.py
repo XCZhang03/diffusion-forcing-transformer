@@ -30,6 +30,8 @@ from utils.ckpt_utils import (
     has_checkpoint,
     generate_unexisting_run_id,
     wandb_to_local_path,
+    retrive_checkpoint,
+    has_linked_checkpoint,
 )
 from utils.cluster_utils import submit_slurm_job
 from utils.distributed_utils import rank_zero_print, is_rank_zero
@@ -68,7 +70,7 @@ def run_local(cfg: DictConfig):
     requeue_path = (
         f"{cfg.wandb.entity}/{cfg.wandb.project}/{requeue}" if requeue else None
     )
-    requeue_has_checkpoint = requeue is not None and has_checkpoint(requeue_path)
+    requeue_has_checkpoint = requeue is not None and has_linked_checkpoint(requeue_path)
     requeue_is_existing_run = requeue is not None and is_existing_run(requeue_path)
 
     # Set up logging with wandb.
@@ -109,11 +111,6 @@ def run_local(cfg: DictConfig):
     if requeue_has_checkpoint:
         if is_rank_zero:
             print(cyan(f"Resuming from requeued run: {requeue}"))
-            download_checkpoint(
-                f"{cfg.wandb.entity}/{cfg.wandb.project}/{requeue}",
-                Path("outputs/downloaded"),
-                "latest",
-            )
         resume = requeue
 
     load = cfg.get("load", None)
@@ -128,9 +125,13 @@ def run_local(cfg: DictConfig):
 
     if load_id:
         run_path = f"{cfg.wandb.entity}/{cfg.wandb.project}/{load_id}"
-        checkpoint_path = wandb_to_local_path(run_path)
-    elif load and is_hf_path(load):
-        checkpoint_path = download_pretrained(load)
+        checkpoint_path = retrive_checkpoint(
+            run_path,
+            "outputs/checkpoint_links",
+            "latest"
+        )
+    # elif load and is_hf_path(load):
+    #     checkpoint_path = download_pretrained(load)
 
     # launch experiment
     experiment = build_experiment(cfg, logger, checkpoint_path)
@@ -243,22 +244,22 @@ def run(cfg: DictConfig):
             "and `load` should not be specified."
         )
 
-    option = None
-    if resume:
-        load_id = resume
-        option = "latest"
-    elif load:
-        load_id, option = parse_load(load)
-        option = "best" if option is None else option
+    # option = None
+    # if resume:
+    #     load_id = resume
+    #     option = "latest"
+    # elif load:
+    #     load_id, option = parse_load(load)
+    #     option = "best" if option is None else option
 
-    if not "skip_download" in cfg:
-        if load_id and "_on_compute_node" not in cfg:
-            run_path = f"{cfg.wandb.entity}/{cfg.wandb.project}/{load_id}"
-            download_checkpoint(run_path, Path("outputs/downloaded"), option=option)
-        if "_on_compute_node" not in cfg and is_rank_zero:
-            download_vae_checkpoints(cfg)
-        if load and is_hf_path(load) and "_on_compute_node" not in cfg:
-            download_pretrained(load)
+    # if not "skip_download" in cfg:
+    #     if load_id and "_on_compute_node" not in cfg:
+    #         run_path = f"{cfg.wandb.entity}/{cfg.wandb.project}/{load_id}"
+    #         download_checkpoint(run_path, Path("outputs/downloaded"), option=option)
+    #     if "_on_compute_node" not in cfg and is_rank_zero:
+    #         download_vae_checkpoints(cfg)
+    #     if load and is_hf_path(load) and "_on_compute_node" not in cfg:
+    #         download_pretrained(load)
 
     if "cluster" in cfg and not "_on_compute_node" in cfg:
         print(

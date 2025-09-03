@@ -80,6 +80,12 @@ def has_checkpoint(run_path: str) -> bool:
         return False
     return False
 
+def has_linked_checkpoint(run_path: str) -> bool:
+    for file_name in Path(run_path).glob("*.ckpt"):
+        if file_name.resolve().exists():
+            return True
+    return False
+
 
 def download_checkpoint(
     run_path: str, download_dir: Path, option: Literal["latest", "best"] = "latest"
@@ -106,6 +112,15 @@ def download_checkpoint(
     checkpoint.download(root=root)
     return root / "model.ckpt"
 
+
+def retrive_checkpoint(
+    run_path: str, checkpoint_dir: str, option: Literal["latest", "best"] = "latest"
+):
+    file_name = Path(checkpoint_dir) / Path(run_path) / f"{option}.ckpt"
+    if file_name.resolve().exists():
+        return file_name.resolve()
+    else:
+        print(f"No {option} model checkpoint found in {run_path}.")
 
 def download_pretrained(
     name: str,

@@ -84,7 +84,7 @@ def log_video(
             imageio.mimwrite(
                 (raw_dir / f"{i + indent}") / "gen_preview.mp4",
                 frames,
-                fps=20,
+                fps=4,
                 macro_block_size=None,
             )
 
@@ -122,7 +122,7 @@ def log_video(
         caption = captions[i] if i < len(captions) else None
         logger.log(
             {
-                name: wandb.Video(video[i], fps=24, caption=caption),
+                name: wandb.Video(video[i], format='mp4', fps=8, caption=caption),
                 "trainer/global_step": step,
             }
         )

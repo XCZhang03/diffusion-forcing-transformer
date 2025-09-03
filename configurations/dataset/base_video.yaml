@@ -25,7 +25,7 @@ max_frames: 32 # Number of frames to be used for training
 n_frames: ${dataset.max_frames} # Number of frames to be used for generating videos
 context_length: 4 # Number of frames to be used as context
 frame_skip: 1 # Stride for sampling frames
-filter_min_len: null # Only for validatio. filters out validation videos shorter than this cfg. A null value defaults to self.n_frames, and filter by its value otherwise 
+filter_min_len: null # Only for validation. filters out validation videos shorter than this cfg. A null value defaults to self.n_frames, and filter by its value otherwise 
 # External conditioning configuration
 external_cond_dim: 0 # Dimension of external conditioning, 0 if no external conditioning
 external_cond_stack: false # Whether to stack external conditioning across skipped frames

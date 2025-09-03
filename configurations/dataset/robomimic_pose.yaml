@@ -1,0 +1,24 @@
+# Important: Be careful when modifying this file! 
+# The fields in file will be overridden by the dataset dependent config file in the `configurations/dataset_experiment` folder so consider making changes there instead! 
+
+defaults:
+  - base_video
+
+save_dir: /n/holylabs/ydu_lab/Lab/zhangxiangcheng/code/diffusion-forcing-transformer/data/robomimic_128/datasets_noisy
+external_cond_dim: 64 # a positive number placeholder to load cond
+max_frames: 8
+frame_skip: 1
+context_length: 4
+resolution: 128
+data_mean: [[[0.530]], [[0.513]], [[0.492]]]
+data_std: [[[0.248]], [[0.251]], [[0.251]]]
+filter_min_len: null
+num_eval_videos: 1024
+subdataset_size: ???
+maximize_training_data: False
+video_preprocessing: null
+augmentation:
+  frame_skip_increase: 0 # increase frame skip by this amount each subepoch
+  horizontal_flip_prob: 0 # probability of horizontally flipping the video
+  reverse_prob: 0 # probability of reversing the video
+  back_and_forth_prob: 0 # probability of playing the video back and forth

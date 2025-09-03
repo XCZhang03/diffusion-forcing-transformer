@@ -4,8 +4,9 @@ from datasets.video import (
     RealEstate10KAdvancedVideoDataset,
     RealEstate10KMiniAdvancedVideoDataset,
     RealEstate10KOODAdvancedVideoDataset,
+    RobomimicAdvancedPoseVideoDataset,
 )
-from algorithms.dfot import DFoTVideo, DFoTVideoPose
+from algorithms.dfot import DFoTVideo, DFoTVideoPose, DFoTVideoControl
 from .base_exp import BaseLightningExperiment
 from .data_modules.utils import _data_module_cls
 
@@ -18,6 +19,7 @@ class VideoGenerationExperiment(BaseLightningExperiment):
     compatible_algorithms = dict(
         dfot_video=DFoTVideo,
         dfot_video_pose=DFoTVideoPose,
+        dfot_video_control=DFoTVideoControl,
         sd_video=DFoTVideo,
         sd_video_3d=DFoTVideoPose,
     )
@@ -29,6 +31,7 @@ class VideoGenerationExperiment(BaseLightningExperiment):
         realestate10k_ood=RealEstate10KOODAdvancedVideoDataset,
         realestate10k_mini=RealEstate10KMiniAdvancedVideoDataset,
         kinetics_600=Kinetics600AdvancedVideoDataset,
+        robomimic_pose=RobomimicAdvancedPoseVideoDataset,
     )
 
     data_module_cls = _data_module_cls

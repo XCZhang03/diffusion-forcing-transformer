@@ -2,13 +2,13 @@ defaults:
   - base_slurm
 
 params:
-  partition: kempner_h100
-  account: kempner_sham_lab
+  partition: kempner_requeue
+  account: kempner_ydu_lab
   env_name: dfot
   num_gpus: 4
   num_cpus: 48
   memory: 256G
-  time: "3-00:00:00" 
+  time: "2-00:00:00" 
 
 launch_template: |
   #!/bin/bash
@@ -30,7 +30,6 @@ launch_template: |
   # export PYTHONFAULTHANDLER=1
 
   cd {project_root}
-  module load Mambaforge
-  mamba deactivate
-  mamba activate {env_name}
-  srun python -m main {python_args} 
+  source ~/.bashrc
+  conda activate {env_name}
+  srun python -m main {python_args}

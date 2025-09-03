@@ -11,6 +11,7 @@ from ..modules.embeddings import (
     RotaryEmbeddingND,
 )
 from ..modules.zero_module import zero_module
+from einops import rearrange
 
 
 class EmbedInput(nn.Module):
@@ -311,4 +312,25 @@ class Upsample(nn.Module):
     def forward(self, x: Tensor) -> Tensor:
         x = self.conv(x)
         x = F.interpolate(x, scale_factor=2, mode="nearest")
+        return x
+
+
+class Conv1x1AsLinear(nn.Module):
+    """
+    A 1x1 convolution implemented via per-pixel Linear.
+    This keeps the parameter as a 2D weight [out, in] so its gradient
+    also stays 2D and contiguous, avoiding DDP bucket stride warnings
+    seen with some 1x1 Conv2d weight grad layouts.
+    """
+
+    def __init__(self, in_channels: int, out_channels: int, bias: bool = True):
+        super().__init__()
+        self.proj = nn.Linear(in_channels, out_channels, bias=bias)
+
+    def forward(self, x: Tensor) -> Tensor:
+        # x: (B, C, H, W) -> (B*H*W, C) -> linear -> (B, out, H, W)
+        b, c, h, w = x.shape
+        x = rearrange(x, "b c h w -> (b h w) c")
+        x = self.proj(x)
+        x = rearrange(x, "(b h w) o -> b o h w", b=b, h=h, w=w)
         return x

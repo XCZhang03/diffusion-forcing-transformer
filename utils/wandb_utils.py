@@ -97,6 +97,8 @@ class SpaceEfficientWandbLogger(WandbLogger):
         )
         self.expiration_days = expiration_days
         self._last_artifacts = []
+        # Optional directory to mirror checkpoints locally via symlinks instead of uploading
+        self._mirror_ckpt_dir = Path(f"outputs/checkpoint_links/{self.experiment.entity}/{self.experiment.project}")
 
     def _scan_and_log_checkpoints(self, checkpoint_callback: ModelCheckpoint) -> None:
         import wandb
@@ -127,26 +129,74 @@ class SpaceEfficientWandbLogger(WandbLogger):
             if not self._checkpoint_name:
                 self._checkpoint_name = f"model-{self.experiment.id}"
 
-            artifact = wandb.Artifact(
-                name=self._checkpoint_name, type="model", metadata=metadata
-            )
-            artifact.add_file(p, name="model.ckpt")
-            aliases = (
-                ["latest", "best"]
-                if p == checkpoint_callback.best_model_path
-                else ["latest"]
-            )
-            self.experiment.log_artifact(artifact, aliases=aliases)
-            # remember logged models - timestamp needed in case filename didn't change (lastkckpt or custom name)
-            self._logged_model_time[p] = t
-            artifacts.append(artifact)
+            # If a mirror directory is provided, symlink instead of uploading artifacts
+            if self._mirror_ckpt_dir is not None:
+                run_dir = self._mirror_ckpt_dir / str(self.experiment.id)
+                run_dir.mkdir(parents=True, exist_ok=True)
 
-        for artifact in self._last_artifacts:
-            if not self._offline:
-                artifact.wait()
-            artifact.ttl = timedelta(days=self.expiration_days)
-            artifact.save()
-        self._last_artifacts = artifacts
+                src = Path(p).resolve()
+                # Always update 'latest.ckpt'
+                latest_link = run_dir / "latest.ckpt"
+                try:
+                    if latest_link.exists() or latest_link.is_symlink():
+                        latest_link.unlink()
+                    latest_link.symlink_to(src)
+                except FileExistsError:
+                    # Best-effort replace
+                    latest_link.unlink(missing_ok=True)
+                    latest_link.symlink_to(src)
+
+                # If this is the best model, also update 'best.ckpt'
+                if p == checkpoint_callback.best_model_path:
+                    best_link = run_dir / "best.ckpt"
+                    try:
+                        if best_link.exists() or best_link.is_symlink():
+                            best_link.unlink()
+                        best_link.symlink_to(src)
+                    except FileExistsError:
+                        best_link.unlink(missing_ok=True)
+                        best_link.symlink_to(src)
+
+                # Optionally keep a symlink with the original filename for traceability
+                named_link = run_dir / Path(p).name
+                if not named_link.exists():
+                    try:
+                        named_link.symlink_to(src)
+                    except FileExistsError:
+                        pass
+                    
+                # scan the symlinks and delete the links of past models that does not exists
+                for link in run_dir.glob("*"):
+                    if link.is_symlink() and not link.resolve().exists():
+                        link.unlink()
+
+                # remember logged models - timestamp needed in case filename didn't change
+                self._logged_model_time[p] = t
+                # Skip uploading; continue to next checkpoint
+                # continue
+                
+
+        #     # Default behavior (upload as W&B artifact)
+        #     artifact = wandb.Artifact(
+        #         name=self._checkpoint_name, type="model", metadata=metadata
+        #     )
+        #     artifact.add_file(p, name="model.ckpt")
+        #     aliases = (
+        #         ["latest", "best"]
+        #         if p == checkpoint_callback.best_model_path
+        #         else ["latest"]
+        #     )
+        #     self.experiment.log_artifact(artifact, aliases=aliases)
+        #     # remember logged models - timestamp needed in case filename didn't change (lastkckpt or custom name)
+        #     self._logged_model_time[p] = t
+        #     artifacts.append(artifact)
+
+        # for artifact in self._last_artifacts:
+        #     if not self._offline:
+        #         artifact.wait()
+        #     artifact.ttl = timedelta(days=self.expiration_days)
+        #     artifact.save()
+        # self._last_artifacts = artifacts
 
 
 class OfflineWandbLogger(SpaceEfficientWandbLogger):
@@ -170,6 +220,7 @@ class OfflineWandbLogger(SpaceEfficientWandbLogger):
         experiment: Union["Run", "RunDisabled", None] = None,
         prefix: str = "",
         checkpoint_name: Optional[str] = None,
+        mirror_checkpoints_dir: Optional[_PATH] = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(
@@ -185,6 +236,7 @@ class OfflineWandbLogger(SpaceEfficientWandbLogger):
             experiment=experiment,
             prefix=prefix,
             checkpoint_name=checkpoint_name,
+            mirror_checkpoints_dir=mirror_checkpoints_dir,
             **kwargs,
         )
         self._offline = offline
