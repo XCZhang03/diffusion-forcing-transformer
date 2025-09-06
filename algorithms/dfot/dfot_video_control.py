@@ -21,9 +21,9 @@ class DFoTVideoControl(DFoTVideo):
         """
         Check if the config is valid
         """
-        if cfg.backbone.name not in {"dit3d_control", "u_vit3d_control"}:
+        if cfg.backbone.name not in {"mmdit3d", "u_vit3d_control"}:
             raise ValueError(
-                f"DiffusionForcingVideo3D only supports backbone 'dit3d_control' or 'u_vit3d_control', got {cfg.backbone.name}"
+                f"DiffusionForcingVideo3D only supports backbone 'mmdit3d' or 'u_vit3d_control', got {cfg.backbone.name}"
             )
 
 

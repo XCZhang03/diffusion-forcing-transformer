@@ -4,6 +4,7 @@ Adapted from https://github.com/facebookresearch/DiT/blob/main/models.py
 
 from typing import Tuple, Optional
 from functools import partial
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -32,6 +33,8 @@ class Attention(nn.Module):
         norm_layer: nn.Module = nn.LayerNorm,
         rope: Optional[RotaryEmbeddingND] = None,
         fused_attn: bool = True,
+        is_conditional: bool = False,
+        conditioning_scale: float = 1.0,
     ) -> None:
         super().__init__()
         assert dim % num_heads == 0, "dim should be divisible by num_heads"
@@ -47,6 +50,8 @@ class Attention(nn.Module):
         self.proj = nn.Linear(dim, dim)
         self.proj_drop = nn.Dropout(proj_drop)
         self.rope = rope
+        self.is_conditional = is_conditional
+        self.conditioning_scale = conditioning_scale
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         B, N, C = x.shape
@@ -57,10 +62,28 @@ class Attention(nn.Module):
         )
         q, k, v = qkv.unbind(0)
         q, k = self.q_norm(q), self.k_norm(k)
-
         if self.rope is not None:
-            q = self.rope(q)
-            k = self.rope(k)
+            if self.is_conditional:
+                q_x, q_cond = q.chunk(2, dim=-2)
+                k_x, k_cond = k.chunk(2, dim=-2)
+                q = torch.cat((self.rope(q_x), self.rope(q_cond)), dim=-2)
+                k = torch.cat((self.rope(k_x), self.rope(k_cond)), dim=-2)
+            else:
+                q = self.rope(q)
+                k = self.rope(k)
+
+        if self.is_conditional and self.conditioning_scale != 1.0:
+            N_input = N // 2
+            ## register attn bias
+            if not hasattr(self, "attn_bias") or self.attn_bias.shape[-1] != N:
+                self.attn_bias = torch.zeros(1, 1, N, N, device=x.device)
+                self.attn_bias[:, :, :N_input, :N_input] = 0.0
+                self.attn_bias[:, :, :N_input, N_input:] = math.log(self.conditioning_scale)
+                self.attn_bias[:, :, N_input:, :N_input] = math.log(self.conditioning_scale)
+                self.attn_bias[:, :, N_input:, N_input:] = 0.0
+            self.attn_bias = self.attn_bias.to(x.dtype)
+        else:
+            self.attn_bias = None
 
         if self.fused_attn:
             # pylint: disable-next=not-callable
@@ -69,10 +92,13 @@ class Attention(nn.Module):
                 k,
                 v,
                 dropout_p=self.attn_drop.p if self.training else 0.0,
+                attn_mask=self.attn_bias,
             )
         else:
             q = q * self.scale
             attn = q @ k.transpose(-2, -1)
+            if self.attn_bias is not None:
+                attn = attn + self.attn_bias
             attn = attn.softmax(dim=-1)
             attn = self.attn_drop(attn)
             x = attn @ v
@@ -81,7 +107,6 @@ class Attention(nn.Module):
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
-
 
 class AdaLayerNorm(nn.Module):
     """

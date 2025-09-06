@@ -12,6 +12,7 @@ from ..backbones import (
     UViT3D,
     UViT3DPose,
     UViT3DControl,
+    MMDiT3D,
 )
 from .noise_schedule import make_beta_schedule
 
@@ -69,6 +70,8 @@ class DiscreteDiffusion(nn.Module):
                 model_cls = DiT3D
             case "dit3d_pose":
                 model_cls = DiT3DPose
+            case "mmdit3d":
+                model_cls = MMDiT3D
             case _:
                 raise ValueError(f"unknown model type {self.model_type}")
         self.model = model_cls(
