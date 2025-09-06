@@ -275,15 +275,15 @@ class UViT3DControl(UViT3D):
             cfg,
             x_shape,
             max_tokens,
-            cfg.conditioning.dim,
+            None,
             use_causal_mask,
         )
         self.control_net = UViTControlBlock(
             cfg,
             x_shape,
             max_tokens,
-            external_cond_dim=x_shape[0],  ## pose condition has same shape as x
-            use_causal_mask=use_causal_mask,
+            external_cond_dim,
+            use_causal_mask,
         )
 
         # No runtime grad hooks; use Conv1x1AsLinear for 1x1 convs to keep grads contiguous
