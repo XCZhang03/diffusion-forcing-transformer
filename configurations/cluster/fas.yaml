@@ -15,6 +15,7 @@ launch_template: |
   #SBATCH -J {name}
   #SBATCH -o {log_dir}/out_%j.out
   #SBATCH -e {log_dir}/error_%j.err
+  #SBATCH --open-mode=append
   #SBATCH --mail-user={email}
   #SBATCH --mail-type=FAIL
   #SBATCH --account={account}

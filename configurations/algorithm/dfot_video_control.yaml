@@ -3,3 +3,4 @@
 defaults:
   - dfot_video
   - override backbone: u_vit3d_control
+  # - override backbone: mmdit3d

@@ -5,7 +5,7 @@ defaults:
   - base_video
 
 save_dir: /n/holylabs/ydu_lab/Lab/zhangxiangcheng/code/diffusion-forcing-transformer/data/robomimic_128/datasets_noisy
-external_cond_dim: 64 # a positive number placeholder to load cond
+external_cond_dim: 3 # channels of pose conditioning
 max_frames: 8
 frame_skip: 1
 context_length: 4
@@ -14,7 +14,7 @@ data_mean: [[[0.530]], [[0.513]], [[0.492]]]
 data_std: [[[0.248]], [[0.251]], [[0.251]]]
 filter_min_len: null
 num_eval_videos: 1024
-subdataset_size: ???
+subdataset_size: 100_000
 maximize_training_data: False
 video_preprocessing: null
 augmentation:
