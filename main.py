@@ -68,7 +68,7 @@ def run_local(cfg: DictConfig):
 
     requeue = cfg.get("requeue", None)
     requeue_path = (
-        f"{cfg.wandb.entity}/{cfg.wandb.project}/{requeue}" if requeue else None
+        f"outputs/checkpoint_links/{cfg.wandb.entity}/{cfg.wandb.project}/{requeue}" if requeue else None
     )
     requeue_has_checkpoint = requeue is not None and has_linked_checkpoint(requeue_path)
     requeue_is_existing_run = requeue is not None and is_existing_run(requeue_path)
@@ -116,25 +116,31 @@ def run_local(cfg: DictConfig):
     load = cfg.get("load", None)
     checkpoint_path = None
     load_id = None
+    load_model_only = False
     if resume:
         load_id = resume
     elif load:
-        load_id = parse_load(load)[0]
+        load_id, option = parse_load(load)
+        if option == 'model':
+            load_model_only = True
         if load_id is None:
-            checkpoint_path = load
+            checkpoint_path = None
+        
 
-    if load_id:
+    if is_run_id(load_id):
         run_path = f"{cfg.wandb.entity}/{cfg.wandb.project}/{load_id}"
         checkpoint_path = retrive_checkpoint(
             run_path,
             "outputs/checkpoint_links",
             "latest"
         )
+    elif Path(load_id).exists():
+        checkpoint_path = Path(load_id).resolve()
     # elif load and is_hf_path(load):
     #     checkpoint_path = download_pretrained(load)
 
     # launch experiment
-    experiment = build_experiment(cfg, logger, checkpoint_path)
+    experiment = build_experiment(cfg, logger, checkpoint_path, load_model_only=load_model_only)
     for task in cfg.experiment.tasks:
         experiment.exec_task(task)
 
