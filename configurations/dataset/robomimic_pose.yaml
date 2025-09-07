@@ -17,6 +17,7 @@ num_eval_videos: 1024
 subdataset_size: 100_000
 maximize_training_data: False
 video_preprocessing: null
+n_frames: 24
 augmentation:
   frame_skip_increase: 0 # increase frame skip by this amount each subepoch
   horizontal_flip_prob: 0 # probability of horizontally flipping the video

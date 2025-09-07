@@ -6,7 +6,8 @@
 # useful for dataset-specific overrides
 
 dataset:
-  num_eval_videos: 64
+  save_dir: /n/holylabs/ydu_lab/Lab/zhangxiangcheng/code/diffusion-forcing-transformer/data/robomimic_128/datasets_noisy
+  num_eval_videos: 128
   maximize_training_data: true
   augmentation:
     frame_skip_increase: 0
@@ -50,7 +51,7 @@ algorithm:
 experiment:
   training:
     lr: 5e-5
-    batch_size: 24
+    batch_size: 2
     max_epochs: 100
     checkpointing:
       every_n_train_steps: null
