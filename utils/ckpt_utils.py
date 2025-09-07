@@ -41,13 +41,13 @@ def parse_load(load: str) -> Tuple[Optional[str], Optional[str]]:
     """
     Parse load into run_id and download option.
     (for load=xxxxxxxx in configurations)
-    - If load_id is a run_id, return the run_id and None.
+    - If load_id is a run_id or path, return the run_id and None.
     - If load_id is of the form run_id:option, return run_id and option.
     - Otherwise, return None, None.
     """
     split = load.split(":")
-    if 1 <= len(split) <= 2 and is_run_id(split[0]):
-        return split[0], split[1] if len(split) == 2 else None
+    if 1 <= len(split) <= 2 and (is_run_id(split[0]) or Path(split[0]).exists()):
+        return split[0], (split[1] if len(split) == 2 else None)
     return None, None
 
 

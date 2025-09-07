@@ -58,7 +58,7 @@ class BaseExperiment(ABC):
         self.ckpt_path = ckpt_path
         self.algo = None
 
-    def _build_algo(self):
+    def _build_algo(self, checkpoint_path: Optional[Union[str, pathlib.Path]] = None):
         """
         Build the lightning module
         :return:  a pytorch-lightning module to be launched
@@ -70,6 +70,9 @@ class BaseExperiment(ABC):
                 "Make sure you define compatible_algorithms correctly and make sure that each key has "
                 "same name as yaml file under '[project_root]/configurations/algorithm' without .yaml suffix"
             )
+        if checkpoint_path is not None:
+            rank_zero_print(cyan("Loading model weights from:"), f"{checkpoint_path}")
+            return self.compatible_algorithms[algo_name].load_from_checkpoint(checkpoint_path, cfg=self.root_cfg.algorithm)
         return self.compatible_algorithms[algo_name](self.root_cfg.algorithm)
 
     def exec_task(self, task: str) -> None:
@@ -109,10 +112,11 @@ class BaseLightningExperiment(BaseExperiment):
         root_cfg: DictConfig,
         logger: Optional[WandbLogger] = None,
         ckpt_path: Optional[Union[str, pathlib.Path]] = None,
+        load_model_only: bool = False,
     ) -> None:
         super().__init__(root_cfg, logger, ckpt_path)
         self.data_module = self.data_module_cls(root_cfg, self.compatible_datasets)
-
+        self.load_model_only = load_model_only
     def _build_common_callbacks(self):
         return [EMA(**self.cfg.ema)]
 
@@ -121,7 +125,7 @@ class BaseLightningExperiment(BaseExperiment):
         All training happens here
         """
         if not self.algo:
-            self.algo = self._build_algo()
+            self.algo = self._build_algo(checkpoint_path = self.ckpt_path if self.load_model_only else None)
         if self.cfg.training.compile:
             self.algo = torch.compile(self.algo)
 
@@ -177,7 +181,7 @@ class BaseLightningExperiment(BaseExperiment):
         trainer.fit(
             self.algo,
             datamodule=self.data_module,
-            ckpt_path=self.ckpt_path,
+            ckpt_path=self.ckpt_path if not self.load_model_only else None,
         )
 
     def validation(self) -> None:

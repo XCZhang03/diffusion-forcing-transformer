@@ -20,6 +20,7 @@ def build_experiment(
     cfg: DictConfig,
     logger: Optional[WandbLogger] = None,
     ckpt_path: Optional[Union[str, pathlib.Path]] = None,
+    load_model_only: bool = False,
 ) -> BaseExperiment:
     """
     Build an experiment instance based on registry
@@ -34,4 +35,4 @@ def build_experiment(
             "Make sure you register it correctly in 'experiments/__init__.py' under the same name as yaml file."
         )
 
-    return exp_registry[cfg.experiment._name](cfg, logger, ckpt_path)
+    return exp_registry[cfg.experiment._name](cfg, logger, ckpt_path, load_model_only)
