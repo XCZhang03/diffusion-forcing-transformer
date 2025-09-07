@@ -43,26 +43,8 @@ def make_symlink(src: Path, dst: Path, force: bool = True) -> None:
         pass
 
 
-def scan_map(roots: Iterable[Path]) -> Dict[str, Path]:
-    """Build map of relative path -> absolute path for all valid video files."""
-    out: Dict[str, Path] = {}
-    for root in roots:
-        root = root.resolve()
-        if not root.exists():
-            print(f"Warning: root does not exist, skipping: {root}")
-            continue
-        for p in sorted(root.rglob("*")):
-            if not p.is_file() or p.suffix.lower() not in VIDEO_EXTS:
-                continue
-            rel = p.relative_to(root).as_posix()
-            # Keep first occurrence if duplicates across roots
-            if rel not in out:
-                out[rel] = p.resolve()
-    return out
-
-
 def gather_pairs(
-    video_roots: List[Path], pose_roots: List[Path]
+    video_root: Path
 ) -> Tuple[List[Tuple[Path, Path]], List[Tuple[Path, Path]], List[str]]:
     """Return (train_pairs, val_pairs, skipped) where pairs are (video, pose).
 
@@ -70,34 +52,34 @@ def gather_pairs(
     Only entries under subsets {training, validation} are kept; others are
     collected into skipped list (by rel path) for info.
     """
-    pose_map = scan_map(pose_roots)
     train, val = [], []
     skipped: List[str] = []
 
-    for root in video_roots:
-        root = root.resolve()
-        if not root.exists():
-            print(f"Warning: video root does not exist, skipping: {root}")
+    root = video_root.resolve()
+    pose_root = Path(str(video_root) + "_pose").resolve()
+    if not root.exists():
+        raise RuntimeError(f"Video root does not exist: {root}")
+    if not pose_root.exists():
+        raise RuntimeError(f"Pose root does not exist for video root: {pose_root}")
+
+    for v in sorted(root.rglob("*.mp4")):
+        if v.name.endswith("_pose" + v.suffix.lower()):
+            # Safety: ignore accidental pose files in video roots
+            raise RuntimeError(f"Unexpected pose file in video root: {v}")
+        rel = v.relative_to(root).as_posix()
+        pose_path = pose_root / rel
+        if not pose_path.exists():
+            raise RuntimeError(f"Pose root missing counterpart for video {v} -> {pose_path}")
+        subset = rel.split("/", 1)[0]
+        if subset not in SUBSETS:
+            skipped.append(rel)
             continue
-        for v in sorted(root.rglob("*")):
-            if not v.is_file() or v.suffix.lower() not in VIDEO_EXTS:
-                continue
-            if v.name.endswith("_pose" + v.suffix.lower()):
-                # Safety: ignore accidental pose files in video roots
-                continue
-            rel = v.relative_to(root).as_posix()
-            pose_path = pose_map.get(rel)
-            if pose_path is None:
-                # No pose counterpart found; skip
-                continue
-            subset = rel.split("/", 1)[0]
-            if subset not in SUBSETS:
-                skipped.append(rel)
-                continue
-            if subset == "training":
-                train.append((v.resolve(), pose_path))
-            else:
-                val.append((v.resolve(), pose_path))
+        assert pose_path.resolve().as_posix() == v.resolve().as_posix()[: -4] + "_pose.mp4", \
+            f"Unmatched path for video {v} -> {pose_path}"
+        if subset == "training":
+            train.append((v.resolve(), pose_path.resolve()))
+        else:
+            val.append((v.resolve(), pose_path.resolve()))
 
     return train, val, skipped
 
@@ -131,7 +113,6 @@ def link_pairs(
 def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description="Fuse multiple video/pose roots into a merged dataset using symlinks.")
     ap.add_argument("--video-roots", type=Path, nargs="+", help="One or more roots with original videos")
-    ap.add_argument("--pose-roots", type=Path, nargs="+", help="One or more roots with pose videos")
     ap.add_argument("--dst-dir", type=Path, help="Destination root for original videos; pose root is '<dst-dir>_pose'")
     ap.add_argument("--no-force", action="store_true", help="Do not overwrite existing links")
     ap.add_argument("--dry-run", action="store_true", help="Print actions without creating links")
@@ -140,16 +121,17 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    args.dst_dir = Path("data/robomimic_128/datasets_noisy")
+    args.dst_dir = Path("data/robomimic_128/datasets_eval")
     dst_video = args.dst_dir.resolve()
-    args.video_roots = [Path("data/robomimic_128/datasets_std_0.0"), Path("data/robomimic_128/datasets_std_0.1"), Path("data/robomimic_128/datasets_std_0.5")]
-    args.pose_roots = [Path("data/robomimic_128/datasets_std_0.0_pose"), Path("data/robomimic_128/datasets_std_0.1_pose"), Path("data/robomimic_128/datasets_std_0.5_pose")]
+    args.video_roots = [Path("data/robomimic_128/datasets_std_0.1_128_chunk40"), Path("data/robomimic_128/datasets_std_0.0_128_chunk40")]
     dst_pose = (dst_video.parent / (dst_video.name + "_pose")).resolve()
 
-    train_pairs, val_pairs, skipped = gather_pairs(
-        video_roots=[r.resolve() for r in args.video_roots],
-        pose_roots=[r.resolve() for r in args.pose_roots],
-    )
+    train_pairs, val_pairs, skipped = [], [], []
+    for video_root in args.video_roots:
+        t, v, s = gather_pairs(video_root)
+        train_pairs += t
+        val_pairs += v
+        skipped += s
 
     print(
         f"Found pairs -> training: {len(train_pairs)} | validation: {len(val_pairs)}"
@@ -174,6 +156,19 @@ def main() -> None:
         f"Symlinks created under: {dst_video}/training, {dst_video}/validation and "
         f"{dst_pose}/training, {dst_pose}/validation"
     )
+
+    # Check that corresponding files have matching paths except for '_pose' in pose path
+    for i in range(len(train_pairs)):
+        video_path = (dst_video / "training" / f"{i}.mp4").resolve()
+        pose_path = (dst_pose / "training" / f"{i}.mp4").resolve()
+        video_str = video_path.as_posix()
+        pose_str = pose_path.as_posix()
+        expected_pose_str = video_str[: -4] + "_pose.mp4"
+        if pose_str != expected_pose_str:
+            print(f"Mismatch at index {i}:")
+            print(f"  Video: {video_str}")
+            print(f"  Pose:  {pose_str}")
+            print(f"  Expected pose: {expected_pose_str}")
 
 
 if __name__ == "__main__":
