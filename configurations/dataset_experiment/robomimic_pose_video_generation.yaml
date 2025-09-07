@@ -51,13 +51,14 @@ algorithm:
 experiment:
   training:
     lr: 5e-5
-    batch_size: 2
+    batch_size: 24
     max_epochs: 100
     checkpointing:
       every_n_train_steps: null
       every_n_epochs: 1
   validation:
     batch_size: 8
+    val_every_n_epoch: 5
     data:
       num_workers: 1
   test:

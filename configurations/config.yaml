@@ -16,4 +16,4 @@ wandb:
 resume: null # wandb run id to resume logging and loading checkpoint from
 load: null # wanmdb run id containing checkpoint or a path to a checkpoint file 
 
-name: f8s5r128-robomimic
+name: robomimic-noisy-f8s5r128
