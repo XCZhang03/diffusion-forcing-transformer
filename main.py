@@ -125,19 +125,19 @@ def run_local(cfg: DictConfig):
             load_model_only = True
         if load_id is None:
             checkpoint_path = None
-        
 
-    if is_run_id(load_id):
-        run_path = f"{cfg.wandb.entity}/{cfg.wandb.project}/{load_id}"
-        checkpoint_path = retrive_checkpoint(
-            run_path,
-            "outputs/checkpoint_links",
-            "latest"
-        )
-    elif Path(load_id).exists():
-        checkpoint_path = Path(load_id).resolve()
-    # elif load and is_hf_path(load):
-    #     checkpoint_path = download_pretrained(load)
+    if load_id is not None:
+        if is_run_id(load_id):
+            run_path = f"{cfg.wandb.entity}/{cfg.wandb.project}/{load_id}"
+            checkpoint_path = retrive_checkpoint(
+                run_path,
+                "outputs/checkpoint_links",
+                "latest"
+            )
+        elif Path(load_id).exists():
+            checkpoint_path = Path(load_id).resolve()
+        # elif load and is_hf_path(load):
+        #     checkpoint_path = download_pretrained(load)
 
     # launch experiment
     experiment = build_experiment(cfg, logger, checkpoint_path, load_model_only=load_model_only)

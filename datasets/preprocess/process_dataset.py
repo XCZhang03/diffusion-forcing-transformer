@@ -47,14 +47,15 @@ def rel_parts_under(src_dir: Path, file_path: Path) -> Tuple[str, str, str]:
     return "unknown", "unknown", "unknown"
 
 
-def find_video_pose_pairs(src_dir: Path) -> List[Tuple[Path, Path]]:
+def find_video_pose_pairs(src_dir: Path, keys: List[str] = None) -> List[Tuple[Path, Path]]:
     """Find all (video, pose) mp4 pairs under src_dir.
     A pair is `<name>.mp4` and `<name>_pose.mp4` in the same folder.
     Returns a list of tuples (video_path, pose_path).
     """
     video_files = sorted(
         p for p in src_dir.rglob("*.mp4")
-        if p.is_file() and not p.name.endswith("_pose.mp4")
+        if p.is_file() and not p.name.endswith("_pose.mp4") \
+        and (keys is None or any(k in p.stem for k in keys))
     )
     pairs: List[Tuple[Path, Path]] = []
     for v in video_files:
@@ -139,18 +140,22 @@ def main():
     parser.add_argument("--no-stratify", action="store_true", help="Do not stratify by <task>/<type>; split globally")
     parser.add_argument("--no-force", action="store_true", help="Do not overwrite existing links")
     parser.add_argument("--dry-run", action="store_true", help="Print actions without creating links")
+    parser.add_argument("--keys", type=str, nargs='+', default=["all"], help="Only process videos whose path contains this substring")
 
     args = parser.parse_args()
-    args.src_dir = Path("/net/holy-isilon/ifs/rc_labs/ydu_lab/xczhang/DiffRL/robomimic_dataset/robomimic/datasets_std_0.5_128")
-    args.dst_dir = Path("./data/robomimic_128/datasets_std_0.5")
+    args.src_dir = Path("/net/holy-isilon/ifs/rc_labs/ydu_lab/xczhang/DiffRL/robomimic_dataset/robomimic/datasets_std_0.001_128_chunk160_len160")
+    args.dst_dir = Path("./data/robomimic_128_f8-32/datasets_std_0.001_128_chunk160_len160")
+    # args.keys = ['merged_2x2']
     src_dir: Path = args.src_dir.resolve()
     dst_video: Path = args.dst_dir.resolve()  # ./data/robomimic/
     dst_pose: Path = dst_video.parent / Path(dst_video.name + "_pose")  # ./data/robomimic_pose/
 
     if not src_dir.exists():
         raise SystemExit(f"Source directory does not exist: {src_dir}")
-
-    pairs = find_video_pose_pairs(src_dir)
+    if 'all' in args.keys:
+        args.keys = None
+    print(f"Processing src_dir: {src_dir} with keys: {args.keys}")
+    pairs = find_video_pose_pairs(src_dir, keys=args.keys)
     if not pairs:
         raise SystemExit(f"No video/pose .mp4 pairs found under: {src_dir}")
 

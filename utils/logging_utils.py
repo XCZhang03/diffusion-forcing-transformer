@@ -28,6 +28,7 @@ from torchmetrics.image import (
 def log_video(
     observation_hats: List[torch.Tensor] | torch.Tensor,
     observation_gt: Optional[torch.Tensor] = None,
+    observation_cond: Optional[torch.Tensor] = None,
     step=0,
     namespace="train",
     prefix="video",
@@ -101,7 +102,11 @@ def log_video(
             observation_hat[:, context_frames, i, :, indices] = c
         observation_gt[:, :, i, [0, -1], :] = c
         observation_gt[:, :, i, :, [0, -1]] = c
-    video = torch.cat([*observation_hats, observation_gt], -1).detach().cpu().numpy()
+
+    if observation_cond is not None:
+        video = torch.cat([*observation_hats, observation_gt, observation_cond], -1).detach().cpu().numpy()
+    else:
+        video = torch.cat([*observation_hats, observation_gt], -1).detach().cpu().numpy()
 
     # reshape to original shape
     if n_frames is not None:

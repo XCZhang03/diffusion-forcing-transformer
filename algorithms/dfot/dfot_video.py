@@ -485,6 +485,9 @@ class DFoTVideo(BasePytorchAlgo):
             all_videos["prediction"][:, : self.n_context_frames] = all_videos["gt"][
                 :, : self.n_context_frames
             ]
+
+        if conditions.shape == all_videos["gt"].shape:
+            all_videos["cond"] = conditions  # add conditions for logging
         return all_videos
 
     def _predict_videos(
@@ -767,6 +770,7 @@ class DFoTVideo(BasePytorchAlgo):
             log_video(
                 cut_videos(all_videos[task]),
                 cut_videos(all_videos["gt"]),
+                cut_videos(all_videos["cond"]) if "cond" in all_videos else None,
                 step=None if namespace == "test" else self.global_step,
                 namespace=f"{task}_vis",
                 logger=self.logger.experiment,

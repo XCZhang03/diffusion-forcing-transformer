@@ -3,17 +3,17 @@ defaults:
   - experiment: video_generation # experiment yaml file name in configurations/experiments folder [fixme]
   - dataset: robomimic_pose # dataset yaml file name in configurations/dataset folder [fixme]
   - algorithm: dfot_video_control # algorithm yaml file name in configurations/algorithm folder [fixme]
-  - optional dataset_experiment: ${dataset}_${experiment} # optional yaml file in configurations/dataset_experiment folder, overrides algorithm and experiment configurations that are dataset and experiment dependent
-  - cluster: fas # optional, cluster yaml file name in configurations/cluster folder. Leave null for local compute
+  - optional dataset_experiment: eval_${dataset}_${experiment} # optional yaml file in configurations/dataset_experiment folder, overrides algorithm and experiment configurations that are dataset and experiment dependent
+  - cluster: fas_eval # optional, cluster yaml file name in configurations/cluster folder. Leave null for local compute
 
 debug: false # global debug flag will be passed into configuration of experiment, dataset and algorithm
 
 wandb:
   entity: "awesome-wm" # wandb account name / organization name [fixme]
-  project: dfot # wandb project name; if not provided, defaults to root folder name [fixme]
+  project: dfot-eval # wandb project name; if not provided, defaults to root folder name [fixme]
   mode: online # set wandb logging to online, offline or dryrun
 
 resume: null # wandb run id to resume logging and loading checkpoint from
-load: null # wanmdb run id containing checkpoint or a path to a checkpoint file 
+load: /n/holylabs/ydu_lab/Lab/zhangxiangcheng/code/diffusion-forcing-transformer/outputs/checkpoint_links/awesome-wm/dfot/00qaajc4/epoch=99-step=104200.ckpt:model # wandb run id containing checkpoint or a path to a checkpoint file 
 
-name: robomimic-noisy-f8s5r128
+name: eval_robomimic-noisy_xl-f8s5r128

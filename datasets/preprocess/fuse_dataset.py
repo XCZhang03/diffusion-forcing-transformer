@@ -121,9 +121,9 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    args.dst_dir = Path("data/robomimic_128/datasets_eval")
+    args.dst_dir = Path("data/robomimic_128_f8-32/datasets_noisy")
     dst_video = args.dst_dir.resolve()
-    args.video_roots = [Path("data/robomimic_128/datasets_std_0.1_128_chunk40"), Path("data/robomimic_128/datasets_std_0.0_128_chunk40")]
+    args.video_roots = [Path("data/robomimic_128_f8-32/datasets_std_0.0_128_chunk160_len160"), Path("data/robomimic_128_f8-32/datasets_std_0.01_128_chunk160_len160"), Path("data/robomimic_128_f8-32/datasets_std_0.001_128_chunk160_len160"), Path("data/robomimic_128_f8-32/datasets_std_0.1_128_chunk160_len160"), Path("data/robomimic_128_f8-32/datasets_std_0.6_128_chunk160_len160"), ]
     dst_pose = (dst_video.parent / (dst_video.name + "_pose")).resolve()
 
     train_pairs, val_pairs, skipped = [], [], []

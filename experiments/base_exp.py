@@ -125,7 +125,7 @@ class BaseLightningExperiment(BaseExperiment):
         All training happens here
         """
         if not self.algo:
-            self.algo = self._build_algo(checkpoint_path = self.ckpt_path if self.load_model_only else None)
+            self.algo = self._build_algo(checkpoint_path=self.ckpt_path if self.load_model_only else None)
         if self.cfg.training.compile:
             self.algo = torch.compile(self.algo)
 
@@ -189,7 +189,7 @@ class BaseLightningExperiment(BaseExperiment):
         All validation happens here
         """
         if not self.algo:
-            self.algo = self._build_algo()
+            self.algo = self._build_algo(checkpoint_path=self.ckpt_path if self.load_model_only else None)
         if self.cfg.validation.compile:
             self.algo = torch.compile(self.algo)
 
@@ -218,7 +218,7 @@ class BaseLightningExperiment(BaseExperiment):
         trainer.validate(
             self.algo,
             datamodule=self.data_module,
-            ckpt_path=self.ckpt_path,
+            ckpt_path=self.ckpt_path if not self.load_model_only else None,
         )
 
     def test(self) -> None:
