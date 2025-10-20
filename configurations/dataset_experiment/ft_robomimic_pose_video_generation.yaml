@@ -1,0 +1,69 @@
+# @package _global_
+# 12 x H100 GPUs
+
+# When the (dataset, experiment) pair aligns with the file name of this yaml, 
+# the values here will override individual yamls files for dataset, algorithm and experiment.
+# useful for dataset-specific overrides
+
+dataset:
+  save_dir: /n/holylabs/ydu_lab/Lab/zhangxiangcheng/code/SAILOR/scratch_dir/wm_trajs_videos
+  num_eval_videos: 64
+  n_frames: 24
+  maximize_training_data: true
+  augmentation:
+    frame_skip_increase: 0
+    horizontal_flip_prob: 0.0
+    reverse_prob: 0.0
+    back_and_forth_prob: 0.0
+
+algorithm:
+  lr_scheduler:
+    name: constant_with_warmup
+    num_warmup_steps: 10000
+    num_training_steps: 550000
+  weight_decay: 0.01
+  compile: false
+  diffusion:
+    loss_weighting:
+      strategy: sigmoid
+      sigmoid_bias: -1.0
+    training_schedule:
+      name: cosine
+      shift: 0.125
+    beta_schedule: cosine_simple_diffusion
+    schedule_fn_kwargs:
+      shifted: 0.125
+      interpolated: False
+    is_continuous: true
+    precond_scale: 0.125 # following EDM
+  logging:
+    max_num_videos: 256
+    metrics: [fvd, is, fid, lpips, mse, ssim, psnr]
+  backbone:
+    channels: [128, 256, 512, 1024]
+    num_updown_blocks: [3, 3, 6]
+    num_mid_blocks: 12
+    num_heads: 4
+    use_checkpointing: [false, false, false, true]
+    use_fourier_noise_embedding: true
+
+
+  
+experiment:
+  tasks: [training]
+  training:
+    lr: 5e-5
+    batch_size: 48
+    max_epochs: 10
+    checkpointing:
+      every_n_train_steps: null
+      every_n_epochs: 1
+  validation:
+    batch_size: 128
+    val_every_n_epoch: 1
+    data:
+      num_workers: 1
+  test:
+    batch_size: 128
+    data:
+      num_workers: 1
