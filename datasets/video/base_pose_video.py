@@ -136,6 +136,12 @@ class BasePoseVideoDataset(BaseVideoDataset):
         rank_zero_print(
             cyan(f"{len(valid_indices)} out of {len(video_paths)} videos in {split} have matching timestamps and fps between video and pose video")
         )
+        invalid_indices = set(range(len(video_pts))) - set(valid_indices)
+        if len(invalid_indices) > 0:
+            for i in list(invalid_indices):
+                rank_zero_print(
+                    cyan(f"  - Mismatch video: {video_paths[i].resolve()} and pose video: {pose_video_paths[i].resolve()}")
+                )
         video_paths = [video_paths[i] for i in valid_indices]
         video_pts = [video_pts[i] for i in valid_indices]
         video_fps = [video_fps[i] for i in valid_indices]
