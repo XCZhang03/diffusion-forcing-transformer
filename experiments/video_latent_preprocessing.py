@@ -1,4 +1,4 @@
-from datasets.video import (
+from video_datasets.video import (
     MinecraftSimpleVideoDataset,
 )
 from algorithms.vae import ImageVAEPreprocessor

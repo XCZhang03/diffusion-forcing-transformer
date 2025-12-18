@@ -1,4 +1,4 @@
-from datasets.video import (
+from video_datasets.video import (
     MinecraftAdvancedVideoDataset,
     Kinetics600AdvancedVideoDataset,
 )

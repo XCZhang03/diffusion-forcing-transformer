@@ -1,6 +1,6 @@
 from typing import Dict
 from omegaconf import DictConfig
-from datasets.video.base_video import BaseAdvancedVideoDataset
+from video_datasets.video.base_video import BaseAdvancedVideoDataset
 from . import BaseDataModule, ResumableDataModule
 
 

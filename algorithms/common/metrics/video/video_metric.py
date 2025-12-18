@@ -70,7 +70,7 @@ class VideoMetric(nn.Module):
             match metric_type:
                 case VideoMetricType.LPIPS:
                     module = LearnedPerceptualImagePatchSimilarity(
-                        registry=registry, normalize=True
+                        normalize=True
                     )
                 case VideoMetricType.FID:
                     module = FrechetInceptionDistance(registry=registry, normalize=True)

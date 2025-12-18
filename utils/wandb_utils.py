@@ -236,7 +236,6 @@ class OfflineWandbLogger(SpaceEfficientWandbLogger):
             experiment=experiment,
             prefix=prefix,
             checkpoint_name=checkpoint_name,
-            mirror_checkpoints_dir=mirror_checkpoints_dir,
             **kwargs,
         )
         self._offline = offline

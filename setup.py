@@ -11,5 +11,5 @@ setup(
     version="0.0.1",
     description="",
     packages=find_packages(),
-    install_requires=parse_requirements("./requirements.txt"),
+    # install_requires=parse_requirements("./requirements.txt"),
 )
